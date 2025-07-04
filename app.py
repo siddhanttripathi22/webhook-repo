@@ -65,12 +65,20 @@ def get_events():
 
     for e in results:
         time_str = e["timestamp"].strftime('%d %B %Y - %I:%M %p UTC')
-        if e['action_type'] == "push":
-            formatted.append(f"{e['author']} pushed to {e['to_branch']} on {time_str}")
-        elif e['action_type'] == "pull_request":
-            formatted.append(f"{e['author']} submitted a pull request from {e['from_branch']} to {e['to_branch']} on {time_str}")
-        elif e['action_type'] == "merge":
-            formatted.append(f"{e['author']} merged branch {e['from_branch']} to {e['to_branch']} on {time_str}")
+    event_obj = {
+        "type": e['action_type'],
+        "message": "",
+        "timestamp": e['timestamp'].isoformat()  # Use raw ISO timestamp
+    }
+
+    if e['action_type'] == "push":
+        event_obj["message"] = f"{e['author']} pushed to {e['to_branch']} on {time_str}"
+    elif e['action_type'] == "pull_request":
+        event_obj["message"] = f"{e['author']} submitted a pull request from {e['from_branch']} to {e['to_branch']} on {time_str}"
+    elif e['action_type'] == "merge":
+        event_obj["message"] = f"{e['author']} merged branch {e['from_branch']} to {e['to_branch']} on {time_str}"
+
+    formatted.append(event_obj)
 
     return jsonify(formatted)
 
