@@ -1,11 +1,12 @@
 from flask import Flask, request, jsonify, render_template
 from pymongo import MongoClient
 from flask_cors import CORS
-from datetime import datetime
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 import os
 
-load_dotenv() 
+# Load environment variables
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
@@ -28,7 +29,7 @@ def webhook():
     author = "string"
     from_branch = "string"
     to_branch = "string"
-    timestamp = datetime.utcnow()
+    timestamp = datetime.now(timezone.utc)
 
     if 'pusher' in data:  # Push
         action_type = "push"
@@ -46,7 +47,6 @@ def webhook():
     else:
         return jsonify({"msg": "Unhandled event"}), 400
 
-   
     doc = {
         "action_type": action_type,
         "author": author,
@@ -54,31 +54,31 @@ def webhook():
         "to_branch": to_branch,
         "timestamp": timestamp
     }
+
     events.insert_one(doc)
     return jsonify({"msg": "Event recorded"}), 200
 
 @app.route('/events', methods=['GET'])
 def get_events():
-    
     results = events.find().sort("timestamp", -1).limit(10)
     formatted = []
 
     for e in results:
         time_str = e["timestamp"].strftime('%d %B %Y - %I:%M %p UTC')
-    event_obj = {
-        "type": e['action_type'],
-        "message": "",
-        "timestamp": e['timestamp'].isoformat()  # Use raw ISO timestamp
-    }
+        event_obj = {
+            "type": e['action_type'],
+            "message": "",
+            "timestamp": e['timestamp'].isoformat()
+        }
 
-    if e['action_type'] == "push":
-        event_obj["message"] = f"{e['author']} pushed to {e['to_branch']} on {time_str}"
-    elif e['action_type'] == "pull_request":
-        event_obj["message"] = f"{e['author']} submitted a pull request from {e['from_branch']} to {e['to_branch']} on {time_str}"
-    elif e['action_type'] == "merge":
-        event_obj["message"] = f"{e['author']} merged branch {e['from_branch']} to {e['to_branch']} on {time_str}"
+        if e['action_type'] == "push":
+            event_obj["message"] = f"{e['author']} pushed to {e['to_branch']} on {time_str}"
+        elif e['action_type'] == "pull_request":
+            event_obj["message"] = f"{e['author']} submitted a pull request from {e['from_branch']} to {e['to_branch']} on {time_str}"
+        elif e['action_type'] == "merge":
+            event_obj["message"] = f"{e['author']} merged branch {e['from_branch']} to {e['to_branch']} on {time_str}"
 
-    formatted.append(event_obj)
+        formatted.append(event_obj)
 
     return jsonify(formatted)
 
