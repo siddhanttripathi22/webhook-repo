@@ -20,20 +20,21 @@ function fetchEvents() {
   $.get('/events', function (data) {
     console.log("Events data received:", data);
 
-    const $list = $('#event-list');
+    $('#loading').hide();           // Hide loader
+    const $list = $('#events-list');
+    $list.show();                   // Show events container
     $list.empty();
 
     if (!data || data.length === 0) {
-      $list.append('<li class="text-center text-gray-500">No events yet.</li>');
+      $('#no-events').show();      // Show "no events" box
       return;
     }
 
-    data.forEach(event => {
-      console.log("Event:", event);
+    $('#no-events').hide();        // Hide if events exist
 
+    data.forEach(event => {
       const icon = getIcon(event.type);
       const colorClass = getColor(event.type);
-
       const timeString = formatTime(event.timestamp);
       const timeHtml = timeString ? `<p class="text-sm text-gray-500 mt-1">${timeString}</p>` : '';
 
@@ -48,13 +49,15 @@ function fetchEvents() {
           </div>
         </li>
       `;
-
       $list.append(html);
     });
+
+    $('#last-update').text(`Last updated: ${new Date().toLocaleTimeString()}`);
   }).fail(() => {
     console.error("Failed to fetch events");
   });
 }
+
 
 function formatTime(iso) {
   if (!iso) return '';
